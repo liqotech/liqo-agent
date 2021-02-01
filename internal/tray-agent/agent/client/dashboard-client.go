@@ -125,16 +125,23 @@ func (ctrl *AgentController) getDashboardConfigLocal() bool {
 	var nodePortNo, masterIP string
 	found := false
 	/*search for a LiqoDash Service of type NodePort*/
-	service, err := c.CoreV1().Services(dashConf.namespace).Get(context.TODO(), dashConf.service, metav1.GetOptions{})
-	if err == nil && service.Spec.Type == corev1.ServiceTypeNodePort {
-		ports := service.Spec.Ports
-		for i := range ports {
-			port := ports[i]
-			if port.Name == "https" {
-				nodePortNo = fmt.Sprint(port.NodePort)
-				found = true
-				break
-			}
+	servL, err := c.CoreV1().Services(dashConf.namespace).List(context.TODO(), metav1.ListOptions{
+		LabelSelector: "app=" + dashConf.label,
+	})
+	if err != nil || len(servL.Items) < 1 {
+		return false
+	}
+	service := servL.Items[0]
+	if service.Spec.Type != corev1.ServiceTypeNodePort {
+		return false
+	}
+	ports := service.Spec.Ports
+	for i := range ports {
+		port := ports[i]
+		if port.Name == "https" {
+			nodePortNo = fmt.Sprint(port.NodePort)
+			found = true
+			break
 		}
 	}
 	/*A valid port has been found.
@@ -178,15 +185,18 @@ func (ctrl *AgentController) GetLiqoDashSecret() (*string, error) {
 	service account associated with it.*/
 	c := ctrl.kubeClient
 	dashConf := ctrl.agentConf.dashboard
-	liqoSA, err := c.CoreV1().ServiceAccounts(dashConf.namespace).Get(context.TODO(), dashConf.serviceAccount, metav1.GetOptions{})
-	if err != nil {
+	ServiceAccountsL, err := c.CoreV1().ServiceAccounts(dashConf.namespace).List(context.TODO(), metav1.ListOptions{
+		LabelSelector: "app=" + dashConf.label,
+	})
+	if err != nil || len(ServiceAccountsL.Items) < 1 {
 		return &token, errNoToken
 	}
+	liqoDashSA := ServiceAccountsL.Items[0]
 	found := false
 	var secretName string
-	tokenPrefixName := dashConf.serviceAccount + "-token"
-	for i := range liqoSA.Secrets {
-		secret := liqoSA.Secrets[i]
+	tokenPrefixName := liqoDashSA.Name + "-token"
+	for i := range liqoDashSA.Secrets {
+		secret := liqoDashSA.Secrets[i]
 		if strings.HasPrefix(secret.Name, tokenPrefixName) {
 			found = true
 			secretName = secret.Name
