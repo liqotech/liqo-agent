@@ -20,12 +20,6 @@ type agentConfiguration struct {
 type dashConfig struct {
 	//namespace of LiqoDash.
 	namespace string
-	//service name of LiqoDash.
-	service string
-	//serviceAccount name of LiqoDash.
-	serviceAccount string
-	//ingress name of LiqoDash.
-	ingress string
 	//label is the value for the "app" label, which is
 	//used by all LiqoDash related resources.
 	label string
@@ -50,11 +44,8 @@ func (ctrl *AgentController) acquireClusterConfiguration() {
 	}
 	agentConfig := clConf.Spec.AgentConfig
 	aConf.dashboard = &dashConfig{
-		namespace:      agentConfig.DashboardConfig.Namespace,
-		service:        agentConfig.DashboardConfig.Service,
-		serviceAccount: agentConfig.DashboardConfig.ServiceAccount,
-		label:          agentConfig.DashboardConfig.AppLabel,
-		ingress:        agentConfig.DashboardConfig.Ingress,
+		namespace: agentConfig.DashboardConfig.Namespace,
+		label:     agentConfig.DashboardConfig.AppLabel,
 	}
 	aConf.valid = true
 }
@@ -85,11 +76,8 @@ func createClusterConfig() (*clusterConfig.ClusterConfig, error) {
 		Spec: clusterConfig.ClusterConfigSpec{
 			AgentConfig: clusterConfig.AgentConfig{
 				DashboardConfig: clusterConfig.DashboardConfig{
-					Namespace:      "liqo",
-					Service:        "liqodashService",
-					ServiceAccount: "liqodashSA",
-					AppLabel:       "liqodash",
-					Ingress:        "liqo-dashboard-ingress",
+					Namespace: "liqo",
+					AppLabel:  "liqodash",
 				},
 			},
 		},
