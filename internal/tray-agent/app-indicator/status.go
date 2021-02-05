@@ -213,8 +213,10 @@ type Status struct {
 
 //PeerInfo contains some basic information on a peer.
 type PeerInfo struct {
-	ClusterID   string
-	ClusterName string
+	//ForeignClusterResourceName identifies the name of the associated ForeignCluster CRD.
+	ForeignClusterResourceName string
+	ClusterID                  string
+	ClusterName                string
 	//Unknown identifies whether the peer has no provided ClusterName.
 	//In this case, UnknownId contains a valid serial identifier.
 	Unknown bool
@@ -274,9 +276,10 @@ func (st *Status) AddPeer(data *client.NotifyDataForeignCluster) *PeerInfo {
 		panic("clusterId of a NotifyDataForeignCluster object should always be not empty")
 	}
 	peer := &PeerInfo{
-		ClusterID:           data.ClusterID,
-		OutPeeringConnected: data.OutPeering.Connected,
-		InPeeringConnected:  data.InPeering.Connected,
+		ForeignClusterResourceName: data.Name,
+		ClusterID:                  data.ClusterID,
+		OutPeeringConnected:        data.OutPeering.Connected,
+		InPeeringConnected:         data.InPeering.Connected,
 	}
 	st.Lock()
 	defer st.Unlock()
