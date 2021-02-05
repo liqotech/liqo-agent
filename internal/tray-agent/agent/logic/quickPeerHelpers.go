@@ -81,7 +81,7 @@ Each peer entry has the following structure:
 	4-		INCOMING PEERING: display information and commands for an incoming peering from this peer
 	4.1-	STOP PEERING
 */
-func createPeerNode(peerList *app.MenuNode, data *client.NotifyDataForeignCluster) *app.MenuNode {
+func createPeerNode(peerList *app.MenuNode, data *client.NotifyDataForeignCluster, peer *app.PeerInfo) *app.MenuNode {
 	//create the structure for a single peer
 	peerNode := peerList.UseListChild("", data.ClusterID)
 	//1- STATUS
@@ -94,8 +94,10 @@ func createPeerNode(peerList *app.MenuNode, data *client.NotifyDataForeignCluste
 	//3- OUTGOING PEERING
 	outgoingNode := peerNode.UseListChild(titlePeeringOutgoing, tagPeeringOutgoing)
 	//3.1- START/STOP PEERING
-	outgoingNode.UseListChild(titlePeeringCmdStart, tagPeeringCmd)
-	//todo further connection of the "start/stop peering" entry with a callback
+	outgoingPeeringNode := outgoingNode.UseListChild(titlePeeringCmdStart, tagPeeringCmd)
+	outgoingPeeringNode.Connect(false, peerHelperOutgoingPeering, peer)
+	//the command can not be available unless the authn token is accepted by the foreign cluster.
+	outgoingPeeringNode.SetIsEnabled(false)
 	//3.2- STATUS
 	outgoingStatus := outgoingNode.UseListChild("", tagStatus)
 	outgoingStatus.SetIsVisible(false)
@@ -188,6 +190,9 @@ func refreshPeeringInfo(peerNode *app.MenuNode, peer *app.PeerInfo, data *client
 	if outPresent {
 		cmdNode, ok1 := outgoingEntry.ListChild(tagPeeringCmd)
 		statusNode, ok2 := outgoingEntry.ListChild(tagStatus)
+		//refresh the information, but enable/disable the command entry according to the authn process.
+		cmdAvailable := data.AuthStatus == discovery2.AuthStatusAccepted
+		cmdNode.SetIsEnabled(cmdAvailable)
 		if peer.OutPeeringConnected {
 			outgoingEntry.SetIsChecked(true)
 			if ok1 {
@@ -247,4 +252,27 @@ func describeOutResources(data *client.NotifyDataForeignCluster) string {
 		content.WriteString(labelResourceQuotaUnavailable)
 	}
 	return content.String()
+}
+
+//The following functions are the callbacks associated to the entries of the tray menu "PEERS" sub-section.
+
+//helperOutgoingPeering is a callback to perform the start/stop of an outgoing peering towards a foreign cluster.
+//It takes the *app-indicator/PeerInfo data of the correspondent peer.
+func peerHelperOutgoingPeering(args ...interface{}) {
+	if len(args) < 1 {
+		panic("wrong function arity: missing app-indicator.*PeerInfo parameter")
+	}
+	peer, ok := args[0].(*app.PeerInfo)
+	if !ok {
+		panic("argument is not *app-Indicator.PeerInfo")
+	}
+	agentCtrl := app.GetIndicator().AgentCtrl()
+	peer.RLock()
+	fcName := peer.ForeignClusterResourceName
+	outPeered := peer.OutPeeringConnected
+	peer.RUnlock()
+	if agentCtrl.Connected() {
+		//the operation to be performed is opposite to the actual peering status
+		_ = agentCtrl.StartStopOutPeering(fcName, !outPeered)
+	}
 }

@@ -30,7 +30,7 @@ func listenNewPeer(data client.NotifyDataGeneric, _ ...interface{}) {
 		return
 	}
 	//create a new entry in the dynamic list of the peer menu
-	newPeerNode := createPeerNode(quickNode, fcData)
+	newPeerNode := createPeerNode(quickNode, fcData, peer)
 	//refresh content of the tray menu entry
 	wg := &sync.WaitGroup{}
 	wg.Add(2)
