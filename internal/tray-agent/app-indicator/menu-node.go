@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/getlantern/systray"
 	"github.com/ozgio/strutil"
+	"strings"
 	"sync"
 )
 
@@ -328,7 +329,7 @@ func (n *MenuNode) SetTitle(title string) {
 		n.item.SetTitle(strutil.CenterText(title, menuWidth))
 
 	} else {
-		n.item.SetTitle(fmt.Sprintln(n.icon, title))
+		n.item.SetTitle(strings.Join([]string{n.icon, title}, ""))
 	}
 	n.title = title
 }
