@@ -40,10 +40,8 @@ func TestOnReady(t *testing.T) {
 	// test Listeners registrations
 
 	// test peers Listeners
-	_, exist = i.Listener(client.ChanPeerAdded)
-	assert.True(t, exist, "Listener for NotifyChanType ChanPeerAdded not registered")
-	_, exist = i.Listener(client.ChanPeerUpdated)
-	assert.True(t, exist, "Listener for NotifyChanType ChanPeerUpdated not registered")
+	_, exist = i.Listener(client.ChanPeerAddedOrUpdated)
+	assert.True(t, exist, "Listener for NotifyChanType ChanPeerAddedOrUpdated not registered")
 	_, exist = i.Listener(client.ChanPeerDeleted)
 	assert.True(t, exist, "Listener for NotifyChanType ChanPeerDeleted not registered")
 }

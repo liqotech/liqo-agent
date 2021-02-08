@@ -104,19 +104,23 @@ func foreignclusterAddFunc(obj interface{}) {
 
 	/*If the ClusterID is not provided, it means that the FC cluster identity is yet to be retrieved
 	from the authN endpoint of the foreign cluster. In this case the "new peer" event is handled when this kind
-	of information is provided.*/
+	of information is provided.
+
+	Note: the above mentioned case should be handled in further implementation in order to allow a user to graphically
+	handle the case of a ForeignCluster created with no ClusterID and unable to correctly complete
+	the authn process (e.g. refused/emptyRefused status). This may happen especially when performing manual discovery.
+	*/
 	if fc.Spec.ClusterIdentity.ClusterID == "" {
 		return
 	}
 	data := &NotifyDataForeignCluster{}
 	data.loadPeerInfo(fc)
 	data.loadPeeringInfo(fc)
-	agentCtrl.NotifyChannel(ChanPeerAdded) <- data
+	agentCtrl.NotifyChannel(ChanPeerAddedOrUpdated) <- data
 }
 
 //foreignclusterUpdateFunc is the UPDATE event handler for the ForeignCluster CRDController.
-func foreignclusterUpdateFunc(oldObj interface{}, newObj interface{}) {
-	fcOld := oldObj.(*discovery.ForeignCluster)
+func foreignclusterUpdateFunc(_ interface{}, newObj interface{}) {
 	fcNew := newObj.(*discovery.ForeignCluster)
 	if fcNew.Spec.ClusterIdentity.ClusterID == "" {
 		return
@@ -124,12 +128,7 @@ func foreignclusterUpdateFunc(oldObj interface{}, newObj interface{}) {
 	data := &NotifyDataForeignCluster{}
 	data.loadPeerInfo(fcNew)
 	data.loadPeeringInfo(fcNew)
-	//recover CREATE case when there was no cluster identity available yet and
-	//treat it as a 'peer added' event
-	if fcOld.Spec.ClusterIdentity.ClusterID == "" && fcNew.Spec.ClusterIdentity.ClusterID != "" {
-		agentCtrl.NotifyChannel(ChanPeerAdded) <- data
-	}
-	agentCtrl.NotifyChannel(ChanPeerUpdated) <- data
+	agentCtrl.NotifyChannel(ChanPeerAddedOrUpdated) <- data
 }
 
 //foreignclusterDeleteFunc is the DELETE event handler for the ForeignCluster CRDController.

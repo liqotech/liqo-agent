@@ -87,7 +87,6 @@ func startQuickShowPeers(i *app.Indicator) {
   Since these listeners work on a specific QUICK MenuNode, the associated handlers works only if that QUICK
   is registered in the Indicator.*/
 func startListenerPeersList(i *app.Indicator) {
-	i.Listen(client.ChanPeerAdded, listenNewPeer)
-	i.Listen(client.ChanPeerUpdated, listenUpdatedPeer)
+	i.Listen(client.ChanPeerAddedOrUpdated, listenAddedOrUpdatedPeer)
 	i.Listen(client.ChanPeerDeleted, listenDeletedPeer)
 }
