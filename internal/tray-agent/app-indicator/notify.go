@@ -126,7 +126,7 @@ func (i *Indicator) NotificationSetLevel(level NotifyLevel) {
 //connection with the cluster pointed by $LIQO_KCONFIG.
 func (i *Indicator) NotifyNoConnection() {
 	i.Notify("Liqo Agent: NO CONNECTION", "Agent could not connect to the desired cluster",
-		NotifyIconWarning, IconLiqoNoConn)
+		NotifyIconWarning, IconLiqoWarning)
 }
 
 //NotifyPeering is a semi-configured Notify() call to notify events related to peerings involving a specific peer.

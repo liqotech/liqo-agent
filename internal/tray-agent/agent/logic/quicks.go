@@ -25,23 +25,35 @@ const (
 //quickTurnOnOff is the callback for the QUICK "START/STOP LIQO".
 func quickTurnOnOff(i *app.Indicator) {
 	runSt := i.Status().Running()
+	dashQuick, dashPresent := i.Quick(qDash)
+	peersQuick, peersPresent := i.Quick(qPeers)
 	switch runSt {
 	case app.StatRunOff:
-		//turning ON Liqo if possible
+		//turning ON LiqoAgent if possible
 		if i.AgentCtrl().Connected() {
 			i.Status().SetRunning(app.StatRunOn)
 			updateQuickTurnOnOff(i)
 			i.RefreshStatus()
+			i.SetIcon(app.IconLiqoMain)
+			if dashPresent {
+				dashQuick.SetIsEnabled(true)
+			}
+			if peersPresent {
+				refreshPeerCount(peersQuick)
+			}
 		}
 	case app.StatRunOn:
-		//turning OFF Liqo
-		//todo insert "shutdown peerings" logic
+		//turning OFF LiqoAgent
 		i.Status().SetRunning(app.StatRunOff)
 		updateQuickTurnOnOff(i)
 		i.RefreshStatus()
-		i.SetIcon(app.IconLiqoMain)
-		//the active ACTION is turned off
-		i.DeselectAction()
+		i.SetIcon(app.IconLiqoOff)
+		if dashPresent {
+			dashQuick.SetIsEnabled(false)
+		}
+		if peersPresent {
+			peersQuick.SetIsEnabled(false)
+		}
 	}
 }
 
@@ -52,11 +64,11 @@ func updateQuickTurnOnOff(i *app.Indicator) {
 		title := strings.Builder{}
 		switch i.Status().Running() {
 		case app.StatRunOff:
-			title.WriteString("START")
+			title.WriteString("Start")
 		case app.StatRunOn:
-			title.WriteString("STOP")
+			title.WriteString("Stop")
 		}
-		title.WriteString(" LIQO")
+		title.WriteString(" LiqoAgent")
 		q.SetTitle(title.String())
 	}
 }
@@ -93,7 +105,7 @@ func quickChangeMode(i *app.Indicator) {
 func updateQuickChangeMode(i *app.Indicator) {
 	if q, present := i.Quick(qMode); present {
 		title := strings.Builder{}
-		title.WriteString("SET ")
+		title.WriteString("Set ")
 		mode := i.Status().Mode()
 		switch mode {
 		case app.StatModeAutonomous:
@@ -105,7 +117,7 @@ func updateQuickChangeMode(i *app.Indicator) {
 			//In the current implementation, it is always possible ti switch into AUTONOMOUS mode.
 			q.SetIsEnabled(true)
 		}
-		title.WriteString(" MODE")
+		title.WriteString(" mode")
 		q.SetTitle(title.String())
 	}
 }

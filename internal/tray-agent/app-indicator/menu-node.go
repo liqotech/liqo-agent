@@ -1,7 +1,6 @@
 package app_indicator
 
 import (
-	"fmt"
 	"github.com/getlantern/systray"
 	"github.com/ozgio/strutil"
 	"sync"
@@ -59,7 +58,7 @@ const (
 	nodeIconAction  = "⬢ "
 	nodeIconOption  = ""
 	nodeIconDefault = ""
-	nodeIconChecked = "✔ "
+	nodeIconChecked = "  ✔"
 )
 
 // MenuNode is a stateful wrapper type that provides a better management of the
@@ -328,7 +327,7 @@ func (n *MenuNode) SetTitle(title string) {
 		n.item.SetTitle(strutil.CenterText(title, menuWidth))
 
 	} else {
-		n.item.SetTitle(fmt.Sprintln(n.icon, title))
+		n.item.SetTitle(n.icon + title)
 	}
 	n.title = title
 }
@@ -428,7 +427,7 @@ func (n *MenuNode) SetIsChecked(isChecked bool) {
 	defer n.Unlock()
 	if isChecked && !n.item.Checked() {
 		if !n.hasCheckbox {
-			n.item.SetTitle(fmt.Sprintf("%s%s", nodeIconChecked, n.title))
+			n.item.SetTitle(n.title + nodeIconChecked)
 		}
 		n.item.Check()
 	} else if !isChecked && n.item.Checked() {

@@ -104,9 +104,9 @@ func GetIndicator() *Indicator {
 		root.gProvider = GetGuiProvider()
 		root.SetIcon(IconLiqoNoConn)
 		root.SetLabel("")
+		root.menuTitleNode = newMenuNode(NodeTypeTitle, false, nil)
 		root.menu = newMenuNode(NodeTypeRoot, false, nil)
 		root.activeNode = root.menu
-		root.menuTitleNode = newMenuNode(NodeTypeTitle, false, nil)
 		root.menuStatusNode = newMenuNode(NodeTypeStatus, false, nil)
 		root.config = newConfig()
 		root.status = GetStatus()
@@ -151,72 +151,6 @@ func (i *Indicator) AddAction(title string, tag string, callback func(args ...in
 func (i *Indicator) Action(tag string) (act *MenuNode, present bool) {
 	act, present = i.menu.actionMap[tag]
 	return
-}
-
-//SelectAction selects the ACTION correspondent to 'tag' (if present) as the currently running ACTION in the Indicator,
-//showing its OPTIONS (if present) and hiding all the other ACTIONS. The ACTION must have isDeActivated = false
-func (i *Indicator) SelectAction(tag string) *MenuNode {
-	a, exist := i.menu.actionMap[tag]
-	if exist {
-		if i.activeNode == a || !a.IsEnabled() {
-			return a
-		}
-		i.activeNode = a
-		//If there are other actions than the selected one, use WaitGroup to speed GUI mutation up
-		otherActions := len(i.menu.actionMap) - 1
-		var wgOther sync.WaitGroup
-		wgOther.Add(otherActions)
-		for aTag, action := range i.menu.actionMap {
-			if aTag != tag {
-				//recursively hide all other ACTIONS and all their sub-components
-				go func(n *MenuNode, wg *sync.WaitGroup) {
-					n.SetIsVisible(false)
-					//hide all node sub-components
-					for _, option := range n.optionMap {
-						option.SetIsVisible(false)
-					}
-					wg.Done()
-				}(action, &wgOther)
-			} else {
-				//recursively show selected ACTION with its sub-components
-				action.SetIsVisible(true)
-				action.SetIsEnabled(false)
-				//OPTIONS are shown by default
-				for _, option := range action.optionMap {
-					option.SetIsVisible(true)
-				}
-			}
-		}
-		wgOther.Wait()
-		return a
-	}
-	return nil
-}
-
-//DeselectAction deselects any currently selected ACTION, reverting the GUI to the home page. This does not affect
-//potential status changes (e.g. enabled/disabled).
-func (i *Indicator) DeselectAction() {
-	if i.activeNode != i.menu {
-		for _, action := range i.menu.actionMap {
-			if action != i.activeNode {
-				action.SetIsVisible(true)
-			} else {
-				action.SetIsVisible(true)
-				if action.IsEnabled() {
-					action.SetIsEnabled(true)
-				}
-				//hide all node sub-components
-				for _, option := range action.optionMap {
-					option.SetIsVisible(false)
-				}
-				action.FreeListChildren()
-				//temporary workaround for current implementation of "Liqo Peers;
-				//the action is automatically managed.
-				action.SetIsEnabled(false)
-			}
-		}
-		i.activeNode = i.menu
-	}
 }
 
 //AddQuick adds a QUICK to the indicator menu. It is visible by default.

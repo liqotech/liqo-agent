@@ -24,12 +24,12 @@ const (
 
 // set of frequently used title strings for menu entries regarding peers management
 const (
-	titlePeers           = "PEERS"
-	titlePeerAuthToken   = "Insert auth token manually "
+	titlePeers           = "Peers"
+	titlePeerAuthToken   = "• Insert auth token manually"
 	titlePeeringOutgoing = "OUTGOING PEERING"
 	titlePeeringIncoming = "INCOMING PEERING"
-	titlePeeringCmdStart = "Request peering"
-	titlePeeringCmdStop  = "Stop peering"
+	titlePeeringCmdStart = "• Request peering"
+	titlePeeringCmdStop  = "• Stop peering"
 )
 
 // set of frequently used text strings for menu entries regarding peers management
@@ -54,18 +54,30 @@ const (
 	labelResourceQuotaUnavailable = "unavailable"
 )
 
+const (
+	//peerDataIndentation is the text prefix to prepend in the submenu of each peer entry in the tray menu.
+	peerDataIndentation = "   "
+)
+
 //refreshPeerCount updates the visual counter of the discovered peers (even not peered).
 //Currently the number if retrieved directly from the MenuNode. In a future update the Indicator.Status component
 //will provide it.
 func refreshPeerCount(quick *app.MenuNode) {
-	peerCount := app.GetIndicator().Status().Peers()
+	i := app.GetIndicator()
+	peerCount := i.Status().Peers()
+	on := i.Status().Running()
 	str := strings.Join([]string{"(", strconv.Itoa(peerCount), ")"}, "")
 	quick.SetTitle(strings.Join([]string{titlePeers, str}, " "))
 	//the menu entry is disabled when the counter reaches 0 to avoid useless clicks
 	if peerCount > 0 {
 		quick.SetIsEnabled(true)
+		if on == app.StatRunOn {
+			i.SetIcon(app.IconLiqoPurple)
+		}
+
 	} else {
 		quick.SetIsEnabled(false)
+		i.SetIcon(app.IconLiqoMain)
 	}
 }
 
@@ -88,13 +100,13 @@ func createPeerNode(peerList *app.MenuNode, data *client.NotifyDataForeignCluste
 	statusNode := peerNode.UseListChild("", tagStatus)
 	statusNode.SetIsEnabled(false)
 	//2- AUTHN TOKEN MANUAL INSERTION
-	insertAuthToken := peerNode.UseListChild(titlePeerAuthToken, tagPeerAuthToken)
+	insertAuthToken := peerNode.UseListChild(peerDataIndentation+titlePeerAuthToken, tagPeerAuthToken)
 	insertAuthToken.SetIsEnabled(false)
 	//todo further connection of the "insert auth token" entry with a callback
 	//3- OUTGOING PEERING
-	outgoingNode := peerNode.UseListChild(titlePeeringOutgoing, tagPeeringOutgoing)
+	outgoingNode := peerNode.UseListChild(peerDataIndentation+titlePeeringOutgoing, tagPeeringOutgoing)
 	//3.1- START/STOP PEERING
-	outgoingPeeringNode := outgoingNode.UseListChild(titlePeeringCmdStart, tagPeeringCmd)
+	outgoingPeeringNode := outgoingNode.UseListChild(peerDataIndentation+titlePeeringCmdStart, tagPeeringCmd)
 	outgoingPeeringNode.Connect(false, peerHelperOutgoingPeering, peer)
 	//the command can not be available unless the authn token is accepted by the foreign cluster.
 	outgoingPeeringNode.SetIsEnabled(false)
@@ -103,9 +115,9 @@ func createPeerNode(peerList *app.MenuNode, data *client.NotifyDataForeignCluste
 	outgoingStatus.SetIsVisible(false)
 	outgoingStatus.SetIsEnabled(false)
 	//4- INCOMING PEERING
-	incomingNode := peerNode.UseListChild(titlePeeringIncoming, tagPeeringIncoming)
+	incomingNode := peerNode.UseListChild(peerDataIndentation+titlePeeringIncoming, tagPeeringIncoming)
 	//4.1- STOP PEERING
-	incomingCmd := incomingNode.UseListChild(titlePeeringCmdStop, tagPeeringCmd)
+	incomingCmd := incomingNode.UseListChild(peerDataIndentation+titlePeeringCmdStop, tagPeeringCmd)
 	//todo further connection of the "stop peering" entry with a callback
 	//the "stop peering" entry is by default disabled since its callback can be executed only in presence
 	//of an active incoming peering
@@ -141,7 +153,7 @@ func refreshPeerStatus(peerNode *app.MenuNode, data *client.NotifyDataForeignClu
 	content := strings.Builder{}
 	if present {
 		//a) ClusterID
-		content.WriteString(fmt.Sprintf("%s\n", data.ClusterID))
+		content.WriteString(fmt.Sprintf("%s%s\n", peerDataIndentation, data.ClusterID))
 		//b) TrustMode: identify whether the foreign cluster has a trusted signed certificate
 		var trustMode string
 		switch data.Trusted {
@@ -153,7 +165,7 @@ func refreshPeerStatus(peerNode *app.MenuNode, data *client.NotifyDataForeignClu
 			trustMode = labelPeerUnknown
 		}
 		//c) Status of the Authentication process of the Home cluster on the Foreign cluster.
-		content.WriteString(fmt.Sprintf("Trusted: %s\n", trustMode))
+		content.WriteString(fmt.Sprintf("%sTrusted: %s\n", peerDataIndentation, trustMode))
 		var authStat string
 		switch data.AuthStatus {
 		case discovery2.AuthStatusAccepted:
@@ -165,7 +177,7 @@ func refreshPeerStatus(peerNode *app.MenuNode, data *client.NotifyDataForeignClu
 		default:
 			authStat = labelAuthTokenPending
 		}
-		content.WriteString(fmt.Sprintf("Auth token: %s", authStat))
+		content.WriteString(fmt.Sprintf("%sAuth token: %s", peerDataIndentation, authStat))
 	}
 	statusNode.SetTitle(content.String())
 }
@@ -197,7 +209,7 @@ func refreshPeeringInfo(peerNode *app.MenuNode, peer *app.PeerInfo, data *client
 			outgoingEntry.SetIsChecked(true)
 			if ok1 {
 				//handle start/stop peering button
-				cmdNode.SetTitle(titlePeeringCmdStop)
+				cmdNode.SetTitle(peerDataIndentation + titlePeeringCmdStop)
 			}
 			if ok2 {
 				//show shared resources in active peering
@@ -208,7 +220,7 @@ func refreshPeeringInfo(peerNode *app.MenuNode, peer *app.PeerInfo, data *client
 			outgoingEntry.SetIsChecked(false)
 			if ok1 {
 				//handle start/stop peering button
-				cmdNode.SetTitle(titlePeeringCmdStart)
+				cmdNode.SetTitle(peerDataIndentation + titlePeeringCmdStart)
 			}
 			if ok2 {
 				//no resource is being shared
@@ -239,13 +251,13 @@ func refreshPeeringInfo(peerNode *app.MenuNode, peer *app.PeerInfo, data *client
 //describing the amount of shared resources.
 func describeOutResources(data *client.NotifyDataForeignCluster) string {
 	content := strings.Builder{}
-	content.WriteString("CPU: ")
+	content.WriteString(peerDataIndentation + "CPU: ")
 	if data.OutPeering.CpuQuota != "" {
 		content.WriteString(data.OutPeering.CpuQuota)
 	} else {
 		content.WriteString(labelResourceQuotaUnavailable)
 	}
-	content.WriteString("\nRAM: ")
+	content.WriteString("\n" + peerDataIndentation + "RAM: ")
 	if data.OutPeering.MemQuota != "" {
 		content.WriteString(data.OutPeering.MemQuota)
 	} else {

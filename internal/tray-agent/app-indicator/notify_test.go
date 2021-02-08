@@ -63,5 +63,5 @@ func TestIndicator_NotifyFunctions(t *testing.T) {
 	i := GetIndicator()
 	//test if Indicator icon correctly changes accordingly to each default Notify*() internal config
 	i.NotifyNoConnection()
-	assert.Equal(t, IconLiqoNoConn, i.icon, "NotifyNoConnection: indicator icon not correctly set")
+	assert.Equal(t, IconLiqoWarning, i.icon, "NotifyNoConnection: indicator icon not correctly set")
 }

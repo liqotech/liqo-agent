@@ -12,6 +12,7 @@ require (
 	github.com/oleiade/lane v1.0.1
 	github.com/ozgio/strutil v0.3.0
 	github.com/skratchdot/open-golang v0.0.0-20200116055534-eef842397966
+	github.com/stretchr/testify v1.6.1
 	gopkg.in/yaml.v2 v2.3.0
 	k8s.io/api v0.19.4
 	k8s.io/apimachinery v0.19.4
