@@ -157,12 +157,11 @@ type StatusInterface interface {
 	Peers() int
 	//Peer returns data related to a cluster if it is currently discovered by the home cluster.
 	Peer(clusterId string) (peer *PeerInfo, present bool)
-	//AddPeer registers a newly discovered peer. In case no info about the peer's common name is provided,
-	//a placeholder "unknown identifier" to allow the user to visual distinguish between unknown peers.
+	//AddOrUpdatePeer updates the internal information on an existing or newly discovered peer.
+	//In case no info about the peer's common name is provided, a placeholder "unknown identifier"
+	//is assigned to allow the user to visually distinguish between different unknown peers.
 	//When the number of unknown peers is decremented to 0, the identifier number is reset.
-	AddPeer(data *client.NotifyDataForeignCluster) *PeerInfo
-	//UpdatePeer updates and returns the internal information regarding a registered peer.
-	UpdatePeer(data *client.NotifyDataForeignCluster) *PeerInfo
+	AddOrUpdatePeer(data *client.NotifyDataForeignCluster) *PeerInfo
 	//RemovePeer removes a peer from the currently registered ones.
 	RemovePeer(data *client.NotifyDataForeignCluster) *PeerInfo
 	//GoString produces a textual digest on the main status data managed by
@@ -268,10 +267,10 @@ func (st *Status) Peer(clusterId string) (peer *PeerInfo, present bool) {
 	return
 }
 
-//AddPeer registers a newly discovered peer. In case no info about the peer's common name is provided,
+//addPeer registers a newly discovered peer. In case no info about the peer's common name is provided,
 //a placeholder "unknown identifier" is assigned to allow the user to visually distinguish between different unknown peers.
 //When the number of unknown peers is decremented to 0, the identifier number is reset.
-func (st *Status) AddPeer(data *client.NotifyDataForeignCluster) *PeerInfo {
+func (st *Status) addPeer(data *client.NotifyDataForeignCluster) *PeerInfo {
 	if data.ClusterID == "" {
 		panic("clusterId of a NotifyDataForeignCluster object should always be not empty")
 	}
@@ -281,8 +280,6 @@ func (st *Status) AddPeer(data *client.NotifyDataForeignCluster) *PeerInfo {
 		OutPeeringConnected:        data.OutPeering.Connected,
 		InPeeringConnected:         data.InPeering.Connected,
 	}
-	st.Lock()
-	defer st.Unlock()
 	//- manage peer name
 	if data.ClusterName != "" {
 		peer.ClusterName = data.ClusterName
@@ -307,10 +304,8 @@ func (st *Status) AddPeer(data *client.NotifyDataForeignCluster) *PeerInfo {
 	return peer
 }
 
-//UpdatePeer updates and returns the internal information regarding a registered peer.
-func (st *Status) UpdatePeer(data *client.NotifyDataForeignCluster) *PeerInfo {
-	st.Lock()
-	defer st.Unlock()
+//updatePeer updates and returns the internal information regarding a registered peer.
+func (st *Status) updatePeer(data *client.NotifyDataForeignCluster) *PeerInfo {
 	peer, present := st.peerList[data.ClusterID]
 	if !present {
 		panic("updating information for non existing peer")
@@ -348,6 +343,25 @@ func (st *Status) UpdatePeer(data *client.NotifyDataForeignCluster) *PeerInfo {
 		st.incDecPeerings(PeeringIncoming, false)
 	}
 	return peer
+}
+
+//AddOrUpdatePeer updates the internal information on an existing or newly discovered peer.
+//In case no info about the peer's common name is provided, a placeholder "unknown identifier"
+//is assigned to allow the user to visually distinguish between different unknown peers.
+//When the number of unknown peers is decremented to 0, the identifier number is reset.
+func (st *Status) AddOrUpdatePeer(data *client.NotifyDataForeignCluster) *PeerInfo {
+	st.Lock()
+	defer st.Unlock()
+	//remove this check when handling the case of unauthorized ForeignCluster (probably manually discovered)
+	//which had his authn request refused.
+	if data.ClusterID == "" {
+		panic("clusterId of a NotifyDataForeignCluster object should always be not empty")
+	}
+	_, present := st.peerList[data.ClusterID]
+	if !present {
+		return st.addPeer(data)
+	}
+	return st.updatePeer(data)
 }
 
 //RemovePeer removes a peer from the currently registered ones.
