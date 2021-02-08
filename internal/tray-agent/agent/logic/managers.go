@@ -11,13 +11,15 @@ func OnReady() {
 	// Indicator configuration
 	i := app.GetIndicator()
 	i.RefreshStatus()
+	startListenerClusterConfig(i)
 	startListenerPeersList(i)
 	startQuickOnOff(i)
 	startQuickChangeMode(i)
 	startQuickDashboard(i)
+	startQuickShowPeers(i)
+	i.AddSeparator()
 	startQuickSetNotifications(i)
 	startQuickLiqoWebsite(i)
-	startQuickShowPeers(i)
 	startQuickQuit(i)
 	//try to start Liqo and main ACTION
 	quickTurnOnOff(i)
@@ -48,28 +50,29 @@ func startQuickChangeMode(i *app.Indicator) {
 
 //startQuickLiqoWebsite is the wrapper function to register QUICK "About Liqo".
 func startQuickLiqoWebsite(i *app.Indicator) {
-	i.AddQuick("ⓘ ABOUT LIQO", qWeb, func(args ...interface{}) {
-		_ = open.Start("http://liqo.io")
+	i.AddQuick("Help", qWeb, func(args ...interface{}) {
+		_ = open.Start("https://doc.liqo.io/")
 	})
 }
 
 //startQuickDashboard is the wrapper function to register QUICK "LAUNCH Liqo Dash".
 func startQuickDashboard(i *app.Indicator) {
-	i.AddQuick("LIQODASH", qDash, func(args ...interface{}) {
+	node := i.AddQuick("LiqoDash", qDash, func(args ...interface{}) {
 		quickConnectDashboard(i)
 	})
+	node.SetIsEnabled(false)
 }
 
 //startQuickSetNotifications is the wrapper function to register QUICK "Change Notification settings".
 func startQuickSetNotifications(i *app.Indicator) {
-	i.AddQuick("NOTIFICATIONS SETTINGS", qNotify, func(args ...interface{}) {
+	i.AddQuick("Notifications Settings", qNotify, func(args ...interface{}) {
 		quickChangeNotifyLevel()
 	})
 }
 
 //startQuickQuit is the wrapper function to register QUICK "QUIT".
 func startQuickQuit(i *app.Indicator) {
-	i.AddQuick("QUIT", qQuit, func(args ...interface{}) {
+	i.AddQuick("Quit", qQuit, func(args ...interface{}) {
 		i := args[0].(*app.Indicator)
 		i.Quit()
 	}, i)
@@ -89,4 +92,9 @@ func startQuickShowPeers(i *app.Indicator) {
 func startListenerPeersList(i *app.Indicator) {
 	i.Listen(client.ChanPeerAddedOrUpdated, listenAddedOrUpdatedPeer)
 	i.Listen(client.ChanPeerDeleted, listenDeletedPeer)
+}
+
+//startListenerClusterConfig is a wrapper that starts the listeners regarding Liqo configuration data.
+func startListenerClusterConfig(i *app.Indicator) {
+	i.Listen(client.ChanClusterName, listenClusterName)
 }

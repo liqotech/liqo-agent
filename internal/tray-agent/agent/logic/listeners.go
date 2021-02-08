@@ -101,3 +101,14 @@ func listenDeletedPeer(data client.NotifyDataGeneric, _ ...interface{}) {
 	}
 
 }
+
+func listenClusterName(data client.NotifyDataGeneric, _ ...interface{}) {
+	clusterName, ok := data.(string)
+	if !ok {
+		panic("wrong NotifyData type for an event Listener")
+	}
+	i := app.GetIndicator()
+	status := i.Status()
+	status.SetClusterName(clusterName)
+	i.RefreshStatus()
+}

@@ -114,15 +114,6 @@ func TestIndicatorRoutine(t *testing.T) {
 	assert.False(t, o.IsInvalid(), "OPTION is invalid")
 	// test SelectAction()/DeselectAction() :only selected action should be visible
 	o.SetIsVisible(false)
-	act2 := i.AddAction("second action", "ACTION_TAG_2", nil)
-	i.SelectAction(a.Tag())
-	assert.True(t, a.IsVisible(), "selected ACTION is not visible")
-	assert.True(t, o.IsVisible(), "OPTION of selected ACTION is not visible")
-	assert.False(t, act2.IsVisible(), "non selected ACTION is visible")
-	i.DeselectAction()
-	assert.True(t, a.IsVisible(), "ACTION 1 is not visible")
-	assert.False(t, o.IsVisible(), "OPTION of non selected ACTION should be hidden")
-	assert.True(t, act2.IsVisible(), "ACTION 2 is not visible")
 	//test Quit() and Disconnect
 	i.Quit()
 	assert.True(t, i.quitClosed, "Indicator quitChan not closed at Quit()")

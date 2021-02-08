@@ -25,6 +25,13 @@ const (
 	statRunOnDescription = "ON"
 )
 
+const (
+	//unknownClusterNameLabel is the text placeholder for an unset ClusterName.
+	unknownClusterNameLabel = "UNKNOWN"
+	//unknownClusterNameDescription describes the event of an unset ClusterName.
+	unknownClusterNameDescription = "No ClusterName provided"
+)
+
 //PeeringType defines a type of peering with a foreign cluster.
 type PeeringType bool
 
@@ -164,6 +171,8 @@ type StatusInterface interface {
 	AddOrUpdatePeer(data *client.NotifyDataForeignCluster) *PeerInfo
 	//RemovePeer removes a peer from the currently registered ones.
 	RemovePeer(data *client.NotifyDataForeignCluster) *PeerInfo
+	//SetClusterName sets the common name of the cluster LiqoAgent is currently connected to.
+	SetClusterName(clusterName string)
 	//GoString produces a textual digest on the main status data managed by
 	//a Status instance.
 	GoString() string
@@ -188,6 +197,8 @@ func GetStatus() StatusInterface {
 type Status struct {
 	//the LiqoName of the current user.
 	user string
+	//clusterName is the common name of the cluster LiqoAgent is currently connected to.
+	clusterName string
 	//the running status of the Liqo instance.
 	running StatRun
 	//the current Liqo working mode.
@@ -522,11 +533,12 @@ func (st *Status) GoString() string {
 	st.RLock()
 	defer st.RUnlock()
 	str := strings.Builder{}
-	str.WriteString(fmt.Sprintln(st.user))
-	str.WriteString(fmt.Sprintf("Liqo is %v\n", st.running))
-	str.WriteString(fmt.Sprintf("%v mode\n", st.mode))
-	str.WriteString(fmt.Sprintf("consuming from %v peers\n", st.outgoingPeerings))
-	str.WriteString(fmt.Sprintf("offering to %v peers", st.incomingPeerings))
+	str.WriteString(fmt.Sprintf("LiqoAgent: %v\n", st.running))
+	str.WriteString("ClusterName: " + st.clusterName + "\n")
+	if st.clusterName == unknownClusterNameLabel {
+		str.WriteString("❗ " + unknownClusterNameDescription + " ❗\n")
+	}
+	str.WriteString(fmt.Sprintf("Mode: %v", st.mode))
 	return str.String()
 }
 
@@ -546,4 +558,15 @@ func DestroyStatus() {
 	if GetGuiProvider().Mocked() {
 		statusBlock = nil
 	}
+}
+
+//SetClusterName sets the common name of the cluster LiqoAgent is currently connected to.
+func (st *Status) SetClusterName(clusterName string) {
+	st.Lock()
+	defer st.Unlock()
+	if clusterName == "" {
+		st.clusterName = unknownClusterNameLabel
+		return
+	}
+	st.clusterName = clusterName
 }

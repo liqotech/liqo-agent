@@ -12,6 +12,9 @@ const (
 	ChanPeerAddedOrUpdated NotifyChannel = iota
 	//Notification channel id for the removal of an available peer.
 	ChanPeerDeleted
+	//ChanClusterName os the NotifyChannel used to transmit the current ClusterName of the Liqo cluster the Agent is
+	//connected to.
+	ChanClusterName
 )
 
 //notifyChannelNames contains all the registered NotifyChannel managed by the AgentController.
@@ -19,4 +22,5 @@ const (
 var notifyChannelNames = []NotifyChannel{
 	ChanPeerAddedOrUpdated,
 	ChanPeerDeleted,
+	ChanClusterName,
 }
