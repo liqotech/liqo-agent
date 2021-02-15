@@ -367,7 +367,9 @@ function write_agent_config_file() {
 	# If there are configuration parameters whose value differs from default, write them down to the agent
 	# configuration file, creating or truncating the file if already present.
 	# Currently the only considered information is the kubeconfig file path (KUBECONFIG env var).
-	if [[ "${KUBECONFIG:-}" != "${HOME}/.kube/config" ]]; then
+	local DEFAULT_KUBECONFIG
+	DEFAULT_KUBECONFIG="${HOME}/.kube/config"
+	if [[ "${KUBECONFIG:-${DEFAULT_KUBECONFIG}}" != "${DEFAULT_KUBECONFIG}" ]]; then
 		echo "kubeconfig: ${KUBECONFIG}" >"${AGENT_CONF_FILE_PATH}"
 	fi
 }
