@@ -4,6 +4,7 @@ go 1.14
 
 require (
 	github.com/agrison/go-commons-lang v0.0.0-20200208220349-58e9fcb95174
+	github.com/artonge/go-csv-tag v1.0.0
 	github.com/atotto/clipboard v0.1.2
 	github.com/gen2brain/beeep v0.0.0-20200526185328-e9c15c258e28
 	github.com/gen2brain/dlgs v0.0.0-20201118155338-03fe7f81ad25
@@ -13,14 +14,11 @@ require (
 	github.com/ozgio/strutil v0.3.0
 	github.com/skratchdot/open-golang v0.0.0-20200116055534-eef842397966
 	github.com/stretchr/testify v1.6.1
+	github.com/struCoder/pidusage v0.1.3
 	gopkg.in/yaml.v2 v2.3.0
 	k8s.io/api v0.19.4
 	k8s.io/apimachinery v0.19.4
 	k8s.io/client-go v12.0.0+incompatible
-	k8s.io/kubernetes v1.18.6
-	k8s.io/metrics v0.18.6
-	k8s.io/utils v0.0.0-20201110183641-67b214c5f920
-	sigs.k8s.io/controller-runtime v0.6.2
 )
 
 replace k8s.io/legacy-cloud-providers => k8s.io/legacy-cloud-providers v0.18.6

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/liqotech/liqo-agent/internal/tray-agent/agent/client"
 	"github.com/liqotech/liqo-agent/internal/tray-agent/icon"
+	"github.com/liqotech/liqo-agent/internal/tray-agent/metrics"
 	"sync"
 )
 
@@ -121,6 +122,7 @@ func GetIndicator() *Indicator {
 			root.SetIcon(IconLiqoMain)
 		}
 	}
+
 	return root
 }
 
@@ -277,6 +279,8 @@ func (i *Indicator) RefreshLabel() {
 
 //Quit stops the indicator execution.
 func (i *Indicator) Quit() {
+	metrics.DumpMetricResources()
+	metrics.DumpMetricTimers()
 	if i != nil {
 		i.Disconnect()
 		if i.agentCtrl.Connected() {
