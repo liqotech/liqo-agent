@@ -15,6 +15,26 @@ const (
 	ResourcesExportFileName = "agent_resources.csv"
 	TimeExportFileName      = "agent_time.csv"
 )
+const (
+	MeasureIterations = 5
+	MeasureStep       = 2 * time.Second
+)
+
+var (
+	MTGetIndicator              int
+	MTAgentController           int
+	MTDiscoveryControllerAdd    int
+	MTDiscoveryControllerUpdate int
+	MTDiscoveryMenu             int
+	MTOnReady                   int
+)
+
+const (
+	MROnReadyStart       = "OnReadyStart"
+	MROnReadyEnd         = "OnReadyEnd"
+	MRPeerDiscovered     = "PeerDiscovered"
+	MRPeeringEstablished = "PeeringEstablished"
+)
 
 type MetricResources struct {
 	//row unique ID
@@ -53,6 +73,11 @@ type MetricController struct {
 	Enabled        bool
 }
 
+var DiscoveredPeers = &struct {
+	Peers int
+	sync.RWMutex
+}{}
+
 var MetricResourcesCtl = &MetricController{
 	Pid:            os.Getpid(),
 	Metrics:        []MetricResources{},
@@ -68,16 +93,18 @@ var MetricTimerCtl = &MetricController{
 	Enabled:        true,
 }
 
-func NewMetricTimer(currentPeers int, location string) (id int) {
+func NewMetricTimer(location string) (id int) {
 	if MetricTimerCtl.Enabled {
 		MetricTimerCtl.Lock()
 		defer MetricTimerCtl.Unlock()
 		id = MetricTimerCtl.IDCounter
 		MetricTimerCtl.IDCounter++
+		DiscoveredPeers.RLock()
+		defer DiscoveredPeers.RUnlock()
 		MetricTimerCtl.MetricsMap[id] = &MetricTimer{
 			ID:              id,
 			Tag:             location,
-			DiscoveredPeers: currentPeers,
+			DiscoveredPeers: DiscoveredPeers.Peers,
 			StartTime:       time.Now(),
 		}
 	}
@@ -105,14 +132,16 @@ func DumpMetricTimers() {
 	}
 }
 
-func NewMetricResources(currentPeers int, location string) {
+func NewMetricResources(location string) {
 	if MetricResourcesCtl.Enabled {
 		var m runtime.MemStats
 		runtime.ReadMemStats(&m)
 		sysInfo, _ := pidusage.GetStat(MetricResourcesCtl.Pid)
+		DiscoveredPeers.RLock()
+		defer DiscoveredPeers.RUnlock()
 		metric := MetricResources{
 			Location:        location,
-			DiscoveredPeers: currentPeers,
+			DiscoveredPeers: DiscoveredPeers.Peers,
 		}
 		metric.CPU = uint64(math.Round(sysInfo.CPU * 1000))
 		metric.MemHeap = m.Alloc / 1048576 //convert byte to MByte

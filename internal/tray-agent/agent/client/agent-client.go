@@ -5,6 +5,7 @@ import (
 	"errors"
 	"flag"
 	"github.com/gen2brain/dlgs"
+	"github.com/liqotech/liqo-agent/internal/tray-agent/metrics"
 	"github.com/liqotech/liqo/pkg/crdClient"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
@@ -13,6 +14,7 @@ import (
 	"os"
 	"path/filepath"
 	"sync"
+	"time"
 )
 
 const (
@@ -210,6 +212,7 @@ func createKubeClient() (kubernetes.Interface, error) {
 //GetAgentController returns an initialized AgentController singleton.
 func GetAgentController() *AgentController {
 	if agentCtrl == nil {
+		metrics.MTAgentController = metrics.NewMetricTimer("GetAgentController")
 		agentCtrl = &AgentController{
 			agentConf: &agentConfiguration{},
 		}
@@ -238,6 +241,7 @@ func GetAgentController() *AgentController {
 
 			}
 		}
+		metrics.StopMetricTimer(metrics.MTAgentController, time.Now())
 	}
 	return agentCtrl
 }

@@ -1,9 +1,11 @@
 package client
 
 import (
+	"github.com/liqotech/liqo-agent/internal/tray-agent/metrics"
 	discovery "github.com/liqotech/liqo/apis/discovery/v1alpha1"
 	sharing "github.com/liqotech/liqo/apis/sharing/v1alpha1"
 	discovery2 "github.com/liqotech/liqo/pkg/discovery"
+	"time"
 )
 
 //createForeignClusterController creates a new CRDController for the Liqo ForeignCluster CRD.
@@ -97,6 +99,7 @@ func (d *NotifyDataForeignCluster) loadPeeringInfo(fc *discovery.ForeignCluster)
 
 //foreignclusterAddFunc is the ADD event handler for the ForeignCluster CRDController.
 func foreignclusterAddFunc(obj interface{}) {
+	metrics.MTDiscoveryControllerAdd = metrics.NewMetricTimer("DiscoveryAddFunc")
 	fc := obj.(*discovery.ForeignCluster)
 	/*There are some cases when a just created ForeignCluster already contains information about a peering
 	(pending or accepted), e.g. for a FC discovered due to an incoming peering request or with a peering
@@ -116,11 +119,13 @@ func foreignclusterAddFunc(obj interface{}) {
 	data := &NotifyDataForeignCluster{}
 	data.loadPeerInfo(fc)
 	data.loadPeeringInfo(fc)
+	metrics.StopMetricTimer(metrics.MTDiscoveryControllerAdd, time.Now())
 	agentCtrl.NotifyChannel(ChanPeerAddedOrUpdated) <- data
 }
 
 //foreignclusterUpdateFunc is the UPDATE event handler for the ForeignCluster CRDController.
 func foreignclusterUpdateFunc(_ interface{}, newObj interface{}) {
+	metrics.MTDiscoveryControllerUpdate = metrics.NewMetricTimer("DiscoveryUpdateFunc")
 	fcNew := newObj.(*discovery.ForeignCluster)
 	if fcNew.Spec.ClusterIdentity.ClusterID == "" {
 		return
@@ -128,6 +133,7 @@ func foreignclusterUpdateFunc(_ interface{}, newObj interface{}) {
 	data := &NotifyDataForeignCluster{}
 	data.loadPeerInfo(fcNew)
 	data.loadPeeringInfo(fcNew)
+	metrics.StopMetricTimer(metrics.MTDiscoveryControllerUpdate, time.Now())
 	agentCtrl.NotifyChannel(ChanPeerAddedOrUpdated) <- data
 }
 

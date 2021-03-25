@@ -3,12 +3,17 @@ package logic
 import (
 	"github.com/liqotech/liqo-agent/internal/tray-agent/agent/client"
 	app "github.com/liqotech/liqo-agent/internal/tray-agent/app-indicator"
+	"github.com/liqotech/liqo-agent/internal/tray-agent/metrics"
 	"github.com/skratchdot/open-golang/open"
+	"strconv"
+	"time"
 )
 
 //OnReady is the routine orchestrating Liqo Agent execution.
 func OnReady() {
 	// Indicator configuration
+	metrics.NewMetricResources(metrics.MROnReadyStart)
+	metrics.MTOnReady = metrics.NewMetricTimer("OnReadyRoutine")
 	i := app.GetIndicator()
 	i.RefreshStatus()
 	startListenerClusterConfig(i)
@@ -23,6 +28,13 @@ func OnReady() {
 	startQuickQuit(i)
 	//try to start Liqo and main ACTION
 	quickTurnOnOff(i)
+	metrics.StopMetricTimer(metrics.MTOnReady, time.Now())
+	if metrics.MetricResourcesCtl.Enabled {
+		for i := 0; i < metrics.MeasureIterations; i++ {
+			metrics.NewMetricResources(metrics.MROnReadyEnd + "_" + strconv.Itoa(i))
+			time.Sleep(metrics.MeasureStep)
+		}
+	}
 }
 
 //OnExit is the routine containing clean-up operations to be performed at Liqo Agent exit.

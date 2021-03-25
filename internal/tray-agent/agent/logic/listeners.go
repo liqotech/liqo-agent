@@ -3,7 +3,10 @@ package logic
 import (
 	"github.com/liqotech/liqo-agent/internal/tray-agent/agent/client"
 	app "github.com/liqotech/liqo-agent/internal/tray-agent/app-indicator"
+	"github.com/liqotech/liqo-agent/internal/tray-agent/metrics"
+	"strconv"
 	"sync"
+	"time"
 )
 
 //this file contains the callback functions for the Indicator listeners
@@ -11,6 +14,7 @@ import (
 //******* PEERS *******
 
 func listenAddedOrUpdatedPeer(data client.NotifyDataGeneric, _ ...interface{}) {
+	metrics.MTDiscoveryMenu = metrics.NewMetricTimer("Listener")
 	i := app.GetIndicator()
 	status := i.Status()
 	fcData, ok := data.(*client.NotifyDataForeignCluster)
@@ -19,6 +23,9 @@ func listenAddedOrUpdatedPeer(data client.NotifyDataGeneric, _ ...interface{}) {
 	}
 	//1- store information on Indicator Status
 	peer := status.AddOrUpdatePeer(fcData)
+	metrics.DiscoveredPeers.Lock()
+	metrics.DiscoveredPeers.Peers = status.Peers()
+	metrics.DiscoveredPeers.Unlock()
 	peer.RLock()
 	defer peer.RUnlock()
 	//update content of the Status MenuNode in the tray menu
@@ -39,22 +46,33 @@ func listenAddedOrUpdatedPeer(data client.NotifyDataGeneric, _ ...interface{}) {
 	go refreshPeeringInfo(peerNode, peer, fcData, wg)
 	wg.Wait()
 	refreshPeerCount(quickNode)
+	metrics.StopMetricTimer(metrics.MTDiscoveryMenu, time.Now())
+	if metrics.MetricResourcesCtl.Enabled {
+		for i := 0; i < metrics.MeasureIterations; i++ {
+			metrics.NewMetricResources(metrics.MRPeerDiscovered + "_" + strconv.Itoa(i))
+			time.Sleep(metrics.MeasureStep)
+		}
+	}
 
 	//3- notify selected events
 	if !present {
 		if peer.OutPeeringConnected {
+			metrics.NewMetricResources(metrics.MRPeeringEstablished)
 			i.NotifyPeering(app.PeeringOutgoing, app.NotifyEventPeeringOn, peer)
 		}
 		if peer.InPeeringConnected {
+			metrics.NewMetricResources(metrics.MRPeeringEstablished)
 			i.NotifyPeering(app.PeeringIncoming, app.NotifyEventPeeringOn, peer)
 		}
 	} else {
 		if !fcData.OutPeering.Connected && peer.OutPeeringConnected {
+			metrics.NewMetricResources(metrics.MRPeeringEstablished)
 			i.NotifyPeering(app.PeeringOutgoing, app.NotifyEventPeeringOn, peer)
 		} else if fcData.OutPeering.Connected && !peer.OutPeeringConnected {
 			i.NotifyPeering(app.PeeringOutgoing, app.NotifyEventPeeringOff, peer)
 		}
 		if !fcData.InPeering.Connected && peer.InPeeringConnected {
+			metrics.NewMetricResources(metrics.MRPeeringEstablished)
 			i.NotifyPeering(app.PeeringIncoming, app.NotifyEventPeeringOn, peer)
 		} else if fcData.InPeering.Connected && !peer.InPeeringConnected {
 			i.NotifyPeering(app.PeeringIncoming, app.NotifyEventPeeringOff, peer)

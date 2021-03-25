@@ -6,6 +6,7 @@ import (
 	"github.com/liqotech/liqo-agent/internal/tray-agent/icon"
 	"github.com/liqotech/liqo-agent/internal/tray-agent/metrics"
 	"sync"
+	"time"
 )
 
 //standard width of an item in the tray menu
@@ -92,6 +93,7 @@ type Indicator struct {
 //GetIndicator initializes and returns the Indicator singleton. This function should not be called before Run().
 func GetIndicator() *Indicator {
 	if root == nil {
+		metrics.MTGetIndicator = metrics.NewMetricTimer("GetIndicator")
 		root = &Indicator{
 			quickMap:        make(map[string]*MenuNode),
 			quitChan:        make(chan struct{}),
@@ -113,6 +115,7 @@ func GetIndicator() *Indicator {
 		root.status = GetStatus()
 		root.RefreshStatus()
 		client.LoadLocalConfig()
+		metrics.StopMetricTimer(metrics.MTGetIndicator, time.Now())
 		root.agentCtrl = client.GetAgentController()
 		if !root.agentCtrl.Connected() {
 			root.ShowErrorNoConnection()
@@ -122,7 +125,6 @@ func GetIndicator() *Indicator {
 			root.SetIcon(IconLiqoMain)
 		}
 	}
-
 	return root
 }
 
