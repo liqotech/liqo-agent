@@ -8,7 +8,7 @@ import (
 func createAdvertisementController(kubeconfig string) (*CRDController, error) {
 	controller := &CRDController{}
 	//init client
-	newClient, err := advertisementApi.CreateAdvertisementClient(kubeconfig, nil, false)
+	newClient, err := advertisementApi.CreateAdvertisementClient(kubeconfig, nil, false, nil)
 	if err != nil {
 		return nil, err
 	}
